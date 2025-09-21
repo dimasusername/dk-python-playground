@@ -1,0 +1,49 @@
+name: Decode Token IDs
+
+# This workflow decodes a fixed list of token IDs using OpenAI tiktoken encodings.
+# It runs on workflow dispatch (manual trigger) and pull requests.
+# The decoded output is logged, uploaded as an artifact, and added to the job summary.
+#
+# To extend:
+# - Modify the token IDs in scripts/decode_tokens.py
+# - Add more encodings to the script's ENCODINGS list
+# - Adjust Python version or dependencies as needed
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  decode:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install tiktoken
+
+      - name: Run decoder
+        run: |
+          python scripts/decode_tokens.py | tee decoded_output.txt
+
+      - name: Upload decoded output artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: decoded-output
+          path: decoded_output.txt
+
+      - name: Add output to job summary
+        run: |
+          {
+            echo "Decoded outputs for token IDs [2485, 1129, 268, 34466, 2726, 26583, 24240, 88512, 8526, 31255, 8]:";
+            echo;
+            cat decoded_output.txt;
+          } >> "$GITHUB_STEP_SUMMARY"
